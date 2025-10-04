@@ -108,22 +108,81 @@ cd tablet-resource-manager/server
 npm install --production
 ```
 
-### 3. Build Frontend (Optional)
+### 3. Install PM2 for Process Management
 ```bash
-cd ../web
-npm install
-npm run build
-# Built files will be served by Express in production
+npm install -g pm2
 ```
 
-### 4. Start Server
+### 4. Configure Environment
 ```bash
-cd ../server
-npm start  # Production mode on port 3001
+echo 'NODE_ENV=development' > .env
+echo 'ENABLE_CORS=true' >> .env
 ```
 
-### 5. Access Dashboard
+### 5. Start with PM2
+```bash
+pm2 start ecosystem.config.js
+pm2 save
+```
+
+### 6. Set Up Auto-Boot (Optional)
+
+**Option A: Termux:Boot App (Recommended)**
+1. Install **Termux:Boot** from F-Droid or Google Play Store
+2. Grant boot permissions in Android settings
+3. Boot script is automatically created at `~/.termux/boot/start-tablet-manager.sh`
+4. Server will start automatically on device reboot! 🎯
+
+**Option B: Manual Start After Boot**
+```bash
+cd ~/tablet-resource-manager/server
+./start-server.sh
+```
+
+### 7. Access Dashboard
 Open browser to `http://[tablet-ip]:3001` from any device on your network.
+
+## 🛠️ Server Management (Termux)
+
+### PM2 Process Management
+
+```bash
+# Check server status
+pm2 status
+
+# View real-time logs
+pm2 logs tablet-resource-manager
+
+# Restart server
+pm2 restart tablet-resource-manager
+
+# Stop server
+pm2 stop tablet-resource-manager
+
+# Monitor server performance
+pm2 monit
+```
+
+### Quick Management Scripts
+
+```bash
+# Start server (if stopped)
+cd ~/tablet-resource-manager/server
+./start-server.sh
+
+# Stop server
+./stop-server.sh
+```
+
+### Server Health Check
+
+```bash
+# Test from tablet
+curl http://localhost:3001/health
+
+# Test from network
+curl http://[tablet-ip]:3001/health
+```
 
 ## ⚙️ Configuration
 
@@ -133,13 +192,14 @@ Open browser to `http://[tablet-ip]:3001` from any device on your network.
 ```bash
 PORT=3001                    # Server port
 HOST=0.0.0.0                # Listen on all interfaces
-NODE_ENV=production          # Environment mode
+NODE_ENV=development         # Environment mode (enables CORS)
+ENABLE_CORS=true            # Enable CORS for web dashboard
 AUTH_TOKEN=your_secret_here  # Optional API authentication
 ```
 
 #### Web (.env)
 ```bash
-VITE_API_BASE=http://192.168.1.100:3001  # Backend URL for remote access
+VITE_API_BASE=http://192.168.1.97:3001   # Backend URL for remote access
 VITE_POLL_INTERVAL=5000                  # Metrics polling interval (ms)
 ```
 
@@ -212,12 +272,48 @@ Health check endpoint returning `{ "ok": true }`.
 2. **Permission denied on Termux**: Run `termux-setup-storage`
 3. **Battery data missing**: Install Termux:API app and grant permissions
 4. **High CPU usage**: Increase VITE_POLL_INTERVAL in web/.env
+5. **CORS errors**: Ensure `ENABLE_CORS=true` in server/.env
+6. **Server not starting on boot**: Check Termux:Boot app permissions
+
+### Auto-Boot Troubleshooting
+
+```bash
+# Check if boot script exists
+ls ~/.termux/boot/start-tablet-manager.sh
+
+# Check boot script logs
+cat ~/tablet-resource-manager/server/logs/boot.log
+
+# Manual boot script test
+~/.termux/boot/start-tablet-manager.sh
+
+# Check PM2 saved processes
+pm2 list
+pm2 resurrect
+```
+
+### Server Connection Issues
+
+```bash
+# Check if server is running
+pm2 status
+
+# Check server logs
+pm2 logs tablet-resource-manager --lines 50
+
+# Test local connection
+curl http://localhost:3001/health
+
+# Restart server
+pm2 restart tablet-resource-manager
+```
 
 ### Performance Tips
 
 - Use polling intervals ≥2000ms to reduce resource usage
-- Enable AUTH_TOKEN for production deployments
-- Consider using PM2 for process management in production
+- Enable AUTH_TOKEN for production deployments  
+- Server automatically restarts on crashes via PM2
+- Monitor memory usage with `pm2 monit`
 
 ## 🤝 Contributing
 
